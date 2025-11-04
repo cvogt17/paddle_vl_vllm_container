@@ -37,14 +37,22 @@ def handler(job):
 
     try:
         # 2. Run inference by sending the URL to the vLLM server
-        # The client handles all the complexity.
+        # The client returns a list of PaddleOCRVLResult objects
         output = pipeline.predict(image_url)
         
-        # 3. Convert the result objects to a JSON-serializable list
-        # res.data contains the dictionary of recognized elements
-        results_list = [res.data for res in output]
+        # 3. Build a comprehensive results list based on the documentation
+        results_list = []
+        for res in output:
+            # res is a PaddleOCRVLResult object
+            # We extract all relevant parts as shown in the docs
+            result_item = {
+                "data": res.data,  # This corresponds to 'prunedResult'
+                "markdown": getattr(res, 'markdown', None), # Corresponds to 'markdown'
+                "output_image_base64": getattr(res, 'img', None) # Corresponds to 'outputImages' (as 'img' property)
+            }
+            results_list.append(result_item)
         
-        print("Inference successful.")
+        print("Inference successful. Returning all parts.")
         return results_list
 
     except Exception as e:

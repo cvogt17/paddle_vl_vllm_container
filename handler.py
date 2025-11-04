@@ -25,20 +25,32 @@ def handler(job):
         return {"error": "Pipeline failed to initialize on worker start."}
     
     job_input = job.get('input', {})
+    
+    # --- Get Image URL (Required) ---
     image_url = job_input.get('url')
-
     if not image_url:
         return {"error": "Missing 'url' in input."}
-    
     if not image_url.startswith('http'):
          return {"error": "Invalid input. 'url' must be a valid .png URL."}
 
+    # --- Get Configuration Parameters (Optional) ---
+    # Set defaults based on your preferences
+    use_doc_unwarp = job_input.get('useDocUnwarping', False)
+    use_layout_detection = job_input.get('useLayoutDetection', False)
+    format_block_content = job_input.get('formatBlockContent', True)
+
     print(f"Processing job for URL: {image_url}")
+    print(f"Params: useDocUnwarping={use_doc_unwarp}, useLayoutDetection={use_layout_detection}, formatBlockContent={format_block_content}")
 
     try:
-        # 2. Run inference by sending the URL to the vLLM server
+        # 2. Run inference with the specified parameters
         # The client returns a list of PaddleOCRVLResult objects
-        output = pipeline.predict(image_url)
+        output = pipeline.predict(
+            image_url,
+            use_doc_unwarp=use_doc_unwarp,
+            use_layout_detection=use_layout_detection,
+            format_block_content=format_block_content
+        )
         
         # 3. Build a comprehensive results list based on the documentation
         results_list = []
@@ -62,3 +74,4 @@ def handler(job):
 # 4. Start the RunPod serverless worker
 # This will wait for jobs from the RunPod API
 runpod.serverless.start({"handler": handler})
+
